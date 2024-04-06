@@ -7,6 +7,7 @@ import torch
 from torch import nn
 import numpy as np
 
+
 def get_vocab(train_file):
     freqs = defaultdict(int)
     maxlength = 0
@@ -16,8 +17,8 @@ def get_vocab(train_file):
     with open(train_file, "r") as f:
         for line in f:
             tokens = line.split(" ")
-            if(len(tokens) > 50):
-              continue
+            if len(tokens) > 50:
+                continue
             vocab += tokens
             maxlength = max(maxlength, len(tokens))
 
@@ -33,50 +34,62 @@ def get_vocab(train_file):
                 continue
 
     vocab = [token for token, freq in freqs.items() if freq >= 5]
-    vocab.extend(['<unk>', '<pad>'])
+    vocab.extend(["<unk>", "<pad>"])
     print(len(vocab))
 
     vocab_size = len(vocab)
     word_to_index = {word: i for i, word in enumerate(vocab)}
-    word_to_index['<unk>'] = vocab_size - 2
-    word_to_index['<pad>'] = vocab_size - 1
+    word_to_index["<unk>"] = vocab_size - 2
+    word_to_index["<pad>"] = vocab_size - 1
 
-    prefix_seqs_indexed = [[word_to_index.get(word, word_to_index['<unk>']) for word in seq] for seq in prefix_seqs]
-    prefix_seqs_indexed = [[word_to_index['<pad>']] * (maxlength - len(seq)) + seq for seq in prefix_seqs_indexed]
+    prefix_seqs_indexed = [
+        [word_to_index.get(word, word_to_index["<unk>"]) for word in seq]
+        for seq in prefix_seqs
+    ]
+    prefix_seqs_indexed = [
+        [word_to_index["<pad>"]] * (maxlength - len(seq)) + seq
+        for seq in prefix_seqs_indexed
+    ]
 
     return vocab, prefix_seqs_indexed, word_to_index, maxlength
 
 
-
 class LSTMModel(nn.Module):
-  def __init__(self, repr_dim, hidden_size, learning_rate, momentum, epsilon, vocab):
-    super().__init__()
-    self.repr_dim = repr_dim
-    self.hidden_size = hidden_size
-    self.model = None
-    self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    def __init__(self, repr_dim, hidden_size, learning_rate, momentum, epsilon, vocab):
+        super().__init__()
+        self.repr_dim = repr_dim
+        self.hidden_size = hidden_size
+        self.model = None
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    self.lr = learning_rate
-    self.momentum = momentum
-    self.epsilon = epsilon
+        self.lr = learning_rate
+        self.momentum = momentum
+        self.epsilon = epsilon
 
-    self.embedding_layer = nn.Embedding(len(vocab), self.repr_dim, device=self.device)
-    self.lstm = nn.LSTM(input_size=self.repr_dim, hidden_size=self.hidden_size, batch_first=True)
-    self.output = nn.Linear(self.hidden_size, len(vocab), bias=False, device=self.device)
-    self.to(self.device)
+        self.embedding_layer = nn.Embedding(
+            len(vocab), self.repr_dim, device=self.device
+        )
+        self.lstm = nn.LSTM(
+            input_size=self.repr_dim, hidden_size=self.hidden_size, batch_first=True
+        )
+        self.output = nn.Linear(
+            self.hidden_size, len(vocab), bias=False, device=self.device
+        )
+        self.to(self.device)
 
-  def forward(self, contexts):
-    embeddings = self.embedding_layer(contexts)
-    hidden_reps, _ = self.lstm(embeddings)
-    output = self.output(hidden_reps[:,-1])
-    return output
-
+    def forward(self, contexts):
+        embeddings = self.embedding_layer(contexts)
+        hidden_reps, _ = self.lstm(embeddings)
+        output = self.output(hidden_reps[:, -1])
+        return output
 
 
 # def train_lstm_model(trainset, repr_dim=100, hidden_size=256, learning_rate=0.1, momentum=0.9, epsilon=1e-5, num_epochs=100, batch_size=512):
-def train_lstm_model(model,context_word_batches):
+def train_lstm_model(model, context_word_batches):
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=model.lr, momentum=model.momentum)
+    optimizer = torch.optim.SGD(
+        model.parameters(), lr=model.lr, momentum=model.momentum
+    )
 
     prev_loss = -math.inf
     for epoch in range(85):
@@ -93,7 +106,7 @@ def train_lstm_model(model,context_word_batches):
             optimizer.step()
 
             if i % 500 == 0:
-                print(loss.item(), end=' | ')
+                print(loss.item(), end=" | ")
 
         avg_epoch_loss /= ct
         print(f"Epoch {epoch}, Loss: {avg_epoch_loss} PrevLossL {prev_loss}")
@@ -175,53 +188,78 @@ def train_lstm_model(model,context_word_batches):
 
 
 def get_perp(model, sentence, word_to_index):
-    if (len(sentence) == 0):
+    if len(sentence) == 0:
         return float("NaN")
     contexts = sentence[:, :-1]
     words = sentence[:, -1]
     prob_dists = model.forward(contexts)
     ct = 0
     for i, word in enumerate(words):
-#         print(prob_dists[i][word])
+        #         print(prob_dists[i][word])
         shifted_vec = prob_dists[i] - prob_dists[i].min()
         vec_sum = torch.sum(shifted_vec)
         prob_vec = shifted_vec / vec_sum
         prob = prob_vec[word]
-#         print(prob)
+        #         print(prob)
         ct += 1
         product = 1
         product *= prob.item()
     try:
-        return math.pow(abs(1/product),1/ct)
+        return math.pow(abs(1 / product), 1 / ct)
     except:
         lite = 1
-        
 
 
-vocab, prefix_seqs_indexed, word_to_index, maxlength = get_vocab("./split/TrainingCorpus_PP.txt")
+vocab, prefix_seqs_indexed, word_to_index, maxlength = get_vocab(
+    "/workspaces/NLP_Course_Project/Future-word-prediction-NLP/sourcecode/split/TrainingCorpus_PP.txt"
+)
 
 batches = torch.split(torch.tensor(prefix_seqs_indexed), 256)
 context_word_batches = []
 for batch in batches:
-  context_word_batches.append((batch[:, :-1], batch[:, -1]))
+    context_word_batches.append((batch[:, :-1], batch[:, -1]))
 
 
-# loaded_model = LSTMModel(100, 150, 0.001, 0.9, 0.001, vocab)
+loaded_model = LSTMModel(100, 150, 0.001, 0.9, 0.001, vocab)
 # train_lstm_model(loaded_model,context_word_batches)
 # torch.save(loaded_model.state_dict(), "FirstSave2.pth")
 
-# Loading
-loaded_model = LSTMModel(100, 150, 0.001, 0.9, 0.001, vocab)
-loaded_model.load_state_dict(torch.load(sys.argv[1]))
+# Loading ---------------------------------- IMPORTANT ---------------------------------------
+# loaded_model = LSTMModel(100, 150, 0.001, 0.9, 0.001, vocab)
+# loaded_model.load_state_dict(torch.load(sys.argv[1]))
 
-sentence = input("Enter a Sentence: ")
-tokens = sentence.split(" ")
-if(len(tokens) > 34):
-    print("Please enter string of length less than 34")
-    exit()
-indices = [word_to_index.get(w, word_to_index['<unk>']) for w in tokens] 
-sentence = [indices[:i] for i in range(1,len(indices)+1)]
-sentence = [ ([word_to_index['<pad>']]*(maxlength-len(prefix)) + prefix) for prefix in sentence]
-sentence = torch.tensor(sentence)
-temp = get_perp(loaded_model, sentence, word_to_index)
-print(temp)
+# sentence = input("Enter a Sentence: ")
+# tokens = sentence.split(" ")
+# if len(tokens) > 34:
+#     print("Please enter string of length less than 34")
+#     exit()
+# indices = [word_to_index.get(w, word_to_index["<unk>"]) for w in tokens]
+# sentence = [indices[:i] for i in range(1, len(indices) + 1)]
+# sentence = [
+#     ([word_to_index["<pad>"]] * (maxlength - len(prefix)) + prefix)
+#     for prefix in sentence
+# ]
+# sentence = torch.tensor(sentence)
+# temp = get_perp(loaded_model, sentence, word_to_index)
+# print(temp)
+
+
+def predict_next_words(model, sequence, word_to_index, vocab, topk=10):
+    # Convert the sequence of words to a sequence of indices
+    indices = [word_to_index.get(word, word_to_index["<unk>"]) for word in sequence]
+    # Pad the sequence so that it has the same length as the training sequences
+    sequence = [word_to_index["<pad>"]] * (maxlength - len(indices)) + indices
+    # Convert the sequence to a tensor and add an extra dimension for the batch size
+    sequence = torch.tensor(sequence).unsqueeze(0)
+    # Use the model to predict the next word
+    output = model(sequence)
+    # Find the indices of the words with the highest probabilities
+    _, top_indices = torch.topk(output, topk)
+    # Convert the indices back to words
+    predicted_words = [vocab[index.item()] for index in top_indices[0]]
+    return predicted_words
+
+
+sequence = input("Enter a sequence of words: ").split(" ")
+predicted_words = predict_next_words(loaded_model, sequence, word_to_index, vocab)
+print("Predicted next words:", predicted_words)
