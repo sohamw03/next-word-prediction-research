@@ -15,5 +15,30 @@ title: "Next Word Prediction System Using NLP"
 date-released: 2024-07-19
 doi: 10.1109/ICSPCRE62303.2024.10675259
 url: "https://ieeexplore.ieee.org/document/10675259"
+type: proceedings
+event:
+  title: 2024 IEEE International Conference on Smart Power Control and Renewable Energy (ICSPCRE)
+  date-start: 2024-07-19
+  date-end: 2024-07-21
+  venue:
+    name: Rourkela
+    country: India
 preferred-citation:
   type: proceedings
+  authors:
+    - family-names: Patil
+      given-names: R.
+    - family-names: Dolas
+      given-names: V.
+    - family-names: Godse
+      given-names: R.
+    - family-names: Waghmare
+      given-names: S.
+    - family-names: Chopade
+      given-names: A.
+  doi: 10.1109/ICSPCRE62303.2024.10675259
+  title: "Next Word Prediction System Using NLP"
+  month: 7
+  year: 2024
+  start: 1
+  end: 6
