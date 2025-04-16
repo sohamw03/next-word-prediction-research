@@ -9,7 +9,7 @@ This repository contains resources related to the research paper:
 
 The paper focuses on developing a next-word prediction system using Natural Language Processing (NLP) with Long Short-Term Memory (LSTM) networks. The system aims to enhance content creation and writing assistance by accurately predicting the subsequent word in a sequence.
 
-**Reference**
+**Cite this paper**
 
 ```
 R. Patil, V. Dolas, R. Godse, S. Waghmare and A. Chopade, "Next Word Prediction System Using NLP,"
