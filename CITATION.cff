@@ -15,4 +15,5 @@ title: "Next Word Prediction System Using NLP"
 date-released: 2024-07-19
 doi: 10.1109/ICSPCRE62303.2024.10675259
 url: "https://ieeexplore.ieee.org/document/10675259"
-type: proceedings
+preferred-citation:
+  type: proceedings
